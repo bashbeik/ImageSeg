@@ -89,8 +89,10 @@ def array_crossentropy(y,y_):
 	return tf.reduce_mean(ce, [1, 2])
 
 input_w = 256
-N_labels = 60
+N_labels = 20
 fin_k_size = 7
+learning_rate = 1e-5
+
 in_pad = 16*(fin_k_size-1)
 print in_pad
 
@@ -118,11 +120,20 @@ bigscore = UpSampling2D(size=(8,8))(score_final)
 bigscore = Convolution2D(N_labels, 16, 16, bias=False, border_mode='same')(bigscore)
 score_sf = Lambda(array_softmax, output_shape=(lambda x: x))(bigscore)
 
-print score_sf
+#print score_sf
 # softmax cross-entropy loss
 #score_sf = array_softmax(bigscore)
 
-#loss = array_crossentropy(array_softmax(bigscore), labels)
-#print loss
-model = Model(input=data, output=score_sf)
-model.compile(optimizer='sgd', loss='categorical_crossentropy')
+print score_sf
+loss = array_crossentropy(array_softmax(bigscore), labels)
+
+print loss
+
+tf.scalar_summary(loss.op.name, loss)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+
+global_step = tf.Variable(0, name='global_step', trainable=False)
+train_op = optimizer.minimize(loss, global_step=global_step)
+
+#model = Model(input=data, output=score_sf)
+#model.compile(optimizer='sgd', loss='categorical_crossentropy')
