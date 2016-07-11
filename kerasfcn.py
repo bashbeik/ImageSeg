@@ -89,14 +89,14 @@ def array_crossentropy(y,y_):
 	return tf.reduce_mean(ce, [1, 2])
 
 input_w = 256
-N_labels = 20
+N_labels = 21
 fin_k_size = 7
 learning_rate = 1e-5
 
 in_pad = 16*(fin_k_size-1)
 print in_pad
 
-data   = Input(shape=(       1,input_w,input_w))
+data   = Input(shape=(       3,input_w,input_w))
 labels = Input(shape=(N_labels,input_w,input_w))
 
 datap = ZeroPadding2D(padding=(in_pad,in_pad))(data)
