@@ -3,6 +3,7 @@ from keras.layers import *
 from keras.layers.convolutional import *
 import tensorflow as tf
 from keras import backend as K
+import numpy as np
 
 # TODO: are we doing deconvolution the right way?
 # TODO: how to incorporate different weight/bias learning rates?
@@ -11,11 +12,13 @@ from keras import backend as K
 # A convolutional block.
 # May consist of multiple convolutions of different sizes stacked on top of one another.
 # It may also have an optional max-pooling or dropout layer at the end.
-def convolution_block(x0, conv_kern_sizes, out_dims, max_pool=1, dropout=0.0, bm='same'):
+def convolution_block(x0, conv_kern_sizes, out_dims, prev_dim, max_pool=1, dropout=0.0, bm='same'):
 	# do the stack of convolutional layers
 	for i in range(0,len(conv_kern_sizes)):
 		k = conv_kern_sizes[i]
-		x = Convolution2D(out_dims[i], k, k, border_mode=bm, activation='relu')(x0)
+		weights = np.random.randn((k,k,prev_dim,out_dims[i]))
+		prev_dim = out_dims[i]
+		x = Convolution2D(out_dims[i], k, k, border_mode=bm, weights=weights, activation='relu')(x0)
 		if dropout > 0.0:  # add a dropout layer in between if required
 			x = Dropout(dropout)(x)
 		x0 = x
@@ -102,14 +105,14 @@ labels = Input(shape=(N_labels,input_w,input_w))
 datap = ZeroPadding2D(padding=(in_pad,in_pad))(data)
 # Forward encoding; use convolution blocks.
 # There are 5 max-pools so 2^5=32x downsampling.
-pool1 = convolution_block(datap, [3, 3],    [ 64,  64], max_pool=2)
-pool2 = convolution_block(pool1, [3, 3],    [128, 128], max_pool=2)
-pool3 = convolution_block(pool2, [3, 3, 3], [256, 256, 256], max_pool=2)
-pool4 = convolution_block(pool3, [3, 3, 3], [512, 512, 512], max_pool=2)
-pool5 = convolution_block(pool4, [3, 3, 3], [512, 512, 512], max_pool=2)
-fc7   = convolution_block(pool5, [fin_k_size, 1],    [4096, 4096], dropout=0.5, bm='valid') # no padding on this layer
+pool1 = convolution_block(datap, [3, 3],    [ 64,  64], 3, max_pool=2)
+pool2 = convolution_block(pool1, [3, 3],    [128, 128], 64, max_pool=2)
+pool3 = convolution_block(pool2, [3, 3, 3], [256, 256, 256], 128, max_pool=2)
+pool4 = convolution_block(pool3, [3, 3, 3], [512, 512, 512], 256, max_pool=2)
+pool5 = convolution_block(pool4, [3, 3, 3], [512, 512, 512], 512, max_pool=2)
+fc7   = convolution_block(pool5, [fin_k_size, 1],    [4096, 4096], 512, dropout=0.5, bm='valid') # no padding on this layer
 #fc7   = convolution_block(fc6,   [1], [4096], dropout=0.5)
-score = convolution_block(fc7,   [1], [N_labels])   # final single 1x1 convolution layer for score layer.
+score = convolution_block(fc7,   [1], [N_labels], 4096)   # final single 1x1 convolution layer for score layer.
 
 # Now upsample 4x and deconvolution
 score_fused = upsample2_with_skiplayer(score,       pool4)
