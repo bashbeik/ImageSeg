@@ -16,9 +16,10 @@ def convolution_block(x0, conv_kern_sizes, out_dims, prev_dim, max_pool=1, dropo
 	# do the stack of convolutional layers
 	for i in range(0,len(conv_kern_sizes)):
 		k = conv_kern_sizes[i]
-		weights = np.random.randn((k,k,prev_dim,out_dims[i]))
+		weights = np.random.randn(out_dims[i],prev_dim,k,k)
+		biases  = np.random.randn(out_dims[i])
 		prev_dim = out_dims[i]
-		x = Convolution2D(out_dims[i], k, k, border_mode=bm, weights=weights, activation='relu')(x0)
+		x = Convolution2D(out_dims[i], k, k, border_mode=bm, weights=[weights, biases], activation='relu')(x0)
 		if dropout > 0.0:  # add a dropout layer in between if required
 			x = Dropout(dropout)(x)
 		x0 = x
