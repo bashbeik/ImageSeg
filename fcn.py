@@ -100,7 +100,7 @@ N_labels = 21
 fin_k_size = 7
 learning_rate = 1e-5
 
-interim_dim = 1024 #4096
+interim_dim = 4096
 in_pad = 16*(fin_k_size-1)
 print in_pad
 
